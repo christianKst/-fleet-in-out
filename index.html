@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Fleet IN/OUT" />
+  <link rel="apple-touch-icon" href="icon-180.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <title>Fleet IN/OUT</title>
+  <style>
+    :root{
+      --bg:#f3f4f6; --panel:#fff; --text:#111827; --muted:#6b7280;
+      --in:#16a34a; --out:#dc2626; --accent:#2563eb; --border:#d1d5db;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    header{position:sticky;top:0;z-index:5;background:#111827;color:#fff;padding:calc(env(safe-area-inset-top) + 14px) 16px 14px}
+    header h1{font-size:22px;margin:0}
+    header p{margin:4px 0 0;color:#cbd5e1;font-size:13px}
+    main{max-width:760px;margin:auto;padding:14px 14px calc(28px + env(safe-area-inset-bottom))}
+    .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+    .tab{border:0;border-radius:12px;padding:13px 8px;font-weight:800;background:#e5e7eb;color:#374151;font-size:15px}
+    .tab.active{background:var(--accent);color:white}
+    .panel{background:var(--panel);border-radius:16px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+    .summary{display:flex;gap:8px;margin-bottom:12px}
+    .pill{flex:1;text-align:center;border-radius:12px;padding:10px 6px;font-weight:800}
+    .pill.in{background:#dcfce7;color:#166534}
+    .pill.out{background:#fee2e2;color:#991b1b}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .car{border:0;border-radius:15px;min-height:76px;color:white;font-weight:900;font-size:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+    .car small{font-size:12px;letter-spacing:.8px;margin-top:2px}
+    .car.in{background:var(--in)}
+    .car.out{background:var(--out)}
+    .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+    .btn{border:0;border-radius:12px;padding:14px 10px;font-size:15px;font-weight:800}
+    .btn.primary{background:var(--accent);color:#fff}
+    .btn.secondary{background:#e5e7eb;color:#111827}
+    .btn.danger{background:#111827;color:#fff}
+    dialog{width:min(92vw,620px);border:0;border-radius:18px;padding:0;box-shadow:0 18px 60px rgba(0,0,0,.28)}
+    dialog::backdrop{background:rgba(0,0,0,.5)}
+    .modal{padding:18px}
+    .modal h2{margin:0 0 8px}
+    .modal p{color:var(--muted);font-size:14px;line-height:1.4}
+    label{font-weight:800;font-size:14px;display:block;margin:12px 0 6px}
+    textarea{width:100%;min-height:76px;border:1px solid var(--border);border-radius:12px;padding:11px;font-size:16px;resize:vertical}
+    .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+    .empty{text-align:center;color:var(--muted);padding:28px 10px}
+    @media (min-width:520px){.grid{grid-template-columns:repeat(6,1fr)}}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Fleet IN/OUT</h1>
+  <p>Toca un número para cambiar entre IN y OUT</p>
+</header>
+
+<main>
+  <div class="tabs" id="tabs"></div>
+
+  <section class="panel">
+    <div class="summary">
+      <div class="pill in">IN: <span id="inCount">0</span></div>
+      <div class="pill out">OUT: <span id="outCount">0</span></div>
+    </div>
+
+    <div class="grid" id="carGrid"></div>
+
+    <div class="toolbar">
+      <button class="btn primary" id="editBtn">Editar grupos</button>
+      <button class="btn secondary" id="allInBtn">Todos IN</button>
+    </div>
+    <div class="toolbar">
+      <button class="btn danger" id="resetBtn" style="grid-column:1/-1">Reiniciar jornada</button>
+    </div>
+  </section>
+</main>
+
+<dialog id="editDialog">
+  <form method="dialog" class="modal" id="editForm">
+    <h2>Editar grupos</h2>
+    <p>Escribe los números separados por comas o espacios. Puedes cambiar la cantidad y los números cada día.</p>
+
+    <label for="g12">Grupo 1/2</label>
+    <textarea id="g12"></textarea>
+
+    <label for="g34">Grupo 3/4</label>
+    <textarea id="g34"></textarea>
+
+    <label for="g56">Grupo 5/6</label>
+    <textarea id="g56"></textarea>
+
+    <div class="modal-actions">
+      <button class="btn secondary" value="cancel">Cancelar</button>
+      <button class="btn primary" id="saveGroupsBtn" value="default">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const DEFAULT_GROUPS = {
+  "1/2":[1,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18],
+  "3/4":[19,20,21,23,24,25,26,27,28,29,30,31,32,33,34,35,36,38,39],
+  "5/6":[41,42,43,44,45,47,48,49,50,65,67,68,69,70,71,72]
+};
+
+let data = JSON.parse(localStorage.getItem("fleetDataV1") || "null");
+if (!data) {
+  data = {groups: DEFAULT_GROUPS, states:{}, activeGroup:"1/2"};
+  for (const nums of Object.values(data.groups)) nums.forEach(n => data.states[n] = "in");
+  save();
+}
+
+function save(){ localStorage.setItem("fleetDataV1", JSON.stringify(data)); }
+
+function parseNumbers(text){
+  return [...new Set(
+    text.split(/[\s,;]+/)
+      .map(v => Number(v.trim()))
+      .filter(v => Number.isInteger(v) && v > 0)
+  )].sort((a,b)=>a-b);
+}
+
+function ensureStates(){
+  const active = new Set(Object.values(data.groups).flat().map(String));
+  Object.keys(data.states).forEach(k => { if(!active.has(k)) delete data.states[k]; });
+  active.forEach(k => { if(!data.states[k]) data.states[k] = "in"; });
+}
+
+function renderTabs(){
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+  ["1/2","3/4","5/6"].forEach(g => {
+    const b = document.createElement("button");
+    b.className = "tab" + (data.activeGroup===g ? " active":"");
+    b.textContent = "Grupo " + g;
+    b.onclick = () => { data.activeGroup=g; save(); render(); };
+    tabs.appendChild(b);
+  });
+}
+
+function renderGrid(){
+  const grid = document.getElementById("carGrid");
+  grid.innerHTML = "";
+  const nums = data.groups[data.activeGroup] || [];
+  if(!nums.length){
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">Este grupo está vacío.</div>';
+  }
+  nums.forEach(n => {
+    const state = data.states[n] || "in";
+    const b = document.createElement("button");
+    b.className = "car " + state;
+    b.innerHTML = `<span>${n}</span><small>${state.toUpperCase()}</small>`;
+    b.onclick = () => {
+      data.states[n] = state === "in" ? "out" : "in";
+      save(); renderGrid(); updateCounts();
+      if(navigator.vibrate) navigator.vibrate(35);
+    };
+    grid.appendChild(b);
+  });
+}
+
+function updateCounts(){
+  const nums = data.groups[data.activeGroup] || [];
+  const inCount = nums.filter(n => (data.states[n]||"in")==="in").length;
+  document.getElementById("inCount").textContent = inCount;
+  document.getElementById("outCount").textContent = nums.length - inCount;
+}
+
+function render(){ renderTabs(); renderGrid(); updateCounts(); }
+
+document.getElementById("editBtn").onclick = () => {
+  document.getElementById("g12").value = data.groups["1/2"].join(", ");
+  document.getElementById("g34").value = data.groups["3/4"].join(", ");
+  document.getElementById("g56").value = data.groups["5/6"].join(", ");
+  document.getElementById("editDialog").showModal();
+};
+
+document.getElementById("saveGroupsBtn").onclick = (e) => {
+  e.preventDefault();
+  data.groups["1/2"] = parseNumbers(document.getElementById("g12").value);
+  data.groups["3/4"] = parseNumbers(document.getElementById("g34").value);
+  data.groups["5/6"] = parseNumbers(document.getElementById("g56").value);
+  ensureStates(); save(); render();
+  document.getElementById("editDialog").close();
+};
+
+document.getElementById("allInBtn").onclick = () => {
+  (data.groups[data.activeGroup]||[]).forEach(n => data.states[n]="in");
+  save(); render();
+};
+
+document.getElementById("resetBtn").onclick = () => {
+  if(confirm("¿Marcar todos los coches de los tres grupos como IN?")){
+    Object.values(data.groups).flat().forEach(n => data.states[n]="in");
+    save(); render();
+  }
+};
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js"));
+}
+render();
+</script>
+</body>
+</html>
