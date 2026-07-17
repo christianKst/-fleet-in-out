@@ -1,22 +1,15 @@
-FLEET IN/OUT — VERSIÓN 1
+FLEET IN/OUT — VERSIÓN 3
 
-FUNCIONES
-- Tres grupos editables: 1/2, 3/4 y 5/6.
-- Números y cantidad variables cada día.
-- Un toque cambia el coche entre IN y OUT.
-- Contadores por grupo.
-- Botón “Todos IN” para el grupo visible.
-- Botón “Reiniciar jornada” para los tres grupos.
-- Guarda los datos en el propio iPhone.
-- Funciona sin conexión después de abrirla una vez.
+Incluye:
+- Vista por grupos y vista general.
+- Todos IN, Todos OUT e Invertir por cada grupo.
+- Toque corto para alternar IN/OUT.
+- Pulsación larga para marcar/desmarcar en naranja.
+- Buscador de coche.
+- Contadores generales y por grupo.
+- Edición diaria de números y cantidades.
+- Borrar marcas y reiniciar jornada.
+- Guardado automático y funcionamiento sin conexión.
+- Migración automática de los datos guardados de la V1.
 
-INSTALACIÓN EN IPHONE
-1. Sube esta carpeta a cualquier alojamiento web HTTPS.
-2. Abre index.html mediante la dirección web en Safari.
-3. Pulsa Compartir.
-4. Pulsa “Añadir a pantalla de inicio”.
-5. Abre Fleet IN/OUT desde el icono creado.
-
-IMPORTANTE
-Por seguridad de iOS, una PWA no puede instalarse directamente abriendo index.html
-desde la app Archivos. Debe servirse desde una dirección HTTPS.
+Para GitHub Pages, sube los seis archivos a la raíz del repositorio y reemplaza los anteriores.
