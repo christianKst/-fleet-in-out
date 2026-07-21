@@ -1,15 +1,10 @@
-FLEET IN/OUT — VERSIÓN 3
+FLEET IN/OUT — VERSIÓN 4
 
-Incluye:
-- Vista por grupos y vista general.
-- Todos IN, Todos OUT e Invertir por cada grupo.
-- Toque corto para alternar IN/OUT.
-- Pulsación larga para marcar/desmarcar en naranja.
-- Buscador de coche.
-- Contadores generales y por grupo.
-- Edición diaria de números y cantidades.
-- Borrar marcas y reiniciar jornada.
-- Guardado automático y funcionamiento sin conexión.
-- Migración automática de los datos guardados de la V1.
+NOVEDAD DE ESTA VERSIÓN
+- Añadido el total de coches del grupo en la esquina superior derecha.
+- Se muestra junto a los contadores IN, OUT y marcados.
+- Formato: TOTAL · IN · OUT · MARCADOS.
 
-Para GitHub Pages, sube los seis archivos a la raíz del repositorio y reemplaza los anteriores.
+Esta versión conserva los datos guardados por la V3 en el iPhone.
+
+Para actualizar GitHub, sustituye los archivos anteriores por los incluidos en esta carpeta.

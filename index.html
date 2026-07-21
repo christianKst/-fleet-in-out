@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Fleet IN/OUT" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>Fleet IN/OUT V3</title>
+  <title>Fleet IN/OUT V4</title>
   <style>
     :root{
       --bg:#eef2f7;--panel:#fff;--text:#111827;--muted:#64748b;--border:#cbd5e1;
@@ -55,7 +55,7 @@
 </head>
 <body>
 <header>
-  <div class="title-row"><h1>Fleet IN/OUT</h1><span class="version">V3</span></div>
+  <div class="title-row"><h1>Fleet IN/OUT</h1><span class="version">V4</span></div>
   <div class="global-summary">
     <div class="stat in"><small>TOTAL IN</small><span id="totalIn">0</span></div>
     <div class="stat out"><small>TOTAL OUT</small><span id="totalOut">0</span></div>
@@ -105,7 +105,7 @@ function toggleState(n){const before=data.states[n]||"in";data.states[n]=before=
 function toggleMark(n){const before=!!data.marked[n];if(before)delete data.marked[n];else data.marked[n]=true;save();render();haptic(45);showToast(`Coche ${n}: ${before?"marca quitada":"marcado en naranja"}`,()=>{if(before)data.marked[n]=true;else delete data.marked[n];save();render()})}
 function makeCar(n,general=false){const b=document.createElement("button");const state=data.states[n]||"in";b.className=`car ${state}${data.marked[n]?" marked":""}`;b.dataset.car=String(n);b.setAttribute("aria-label",`Coche ${n}, ${state}, ${data.marked[n]?"marcado":"sin marcar"}`);b.innerHTML=`<span>${n}</span><small>${state.toUpperCase()}</small><span class="flag">●</span>`;let timer=null,longPress=false;b.addEventListener("pointerdown",e=>{longPress=false;timer=setTimeout(()=>{longPress=true;toggleMark(n)},550)});const cancel=()=>{clearTimeout(timer)};b.addEventListener("pointercancel",cancel);b.addEventListener("pointerleave",cancel);b.addEventListener("pointerup",()=>{clearTimeout(timer);if(!longPress)toggleState(n)});b.addEventListener("contextmenu",e=>e.preventDefault());return b}
 function renderTabs(){const el=document.getElementById("tabs");el.innerHTML="";["1/2","3/4","5/6"].forEach(g=>{const b=document.createElement("button");b.className="tab"+(data.activeGroup===g?" active":"");b.textContent=`Grupo ${g}`;b.onclick=()=>{data.activeGroup=g;save();render()};el.appendChild(b)})}
-function renderGroup(){const nums=data.groups[data.activeGroup]||[];document.getElementById("groupTitle").textContent=`Grupo ${data.activeGroup}`;const ins=nums.filter(n=>(data.states[n]||"in")==="in").length;const marks=nums.filter(n=>data.marked[n]).length;document.getElementById("groupCount").textContent=`IN ${ins} · OUT ${nums.length-ins} · 🟠 ${marks}`;const grid=document.getElementById("carGrid");grid.innerHTML="";if(!nums.length)grid.innerHTML='<div class="empty">Este grupo está vacío.</div>';nums.forEach(n=>grid.appendChild(makeCar(n)))}
+function renderGroup(){const nums=data.groups[data.activeGroup]||[];document.getElementById("groupTitle").textContent=`Grupo ${data.activeGroup}`;const ins=nums.filter(n=>(data.states[n]||"in")==="in").length;const marks=nums.filter(n=>data.marked[n]).length;document.getElementById("groupCount").textContent=`TOTAL ${nums.length} · IN ${ins} · OUT ${nums.length-ins} · 🟠 ${marks}`;const grid=document.getElementById("carGrid");grid.innerHTML="";if(!nums.length)grid.innerHTML='<div class="empty">Este grupo está vacío.</div>';nums.forEach(n=>grid.appendChild(makeCar(n)))}
 function renderGeneral(){const nums=allCars(),grid=document.getElementById("generalGrid");grid.innerHTML="";document.getElementById("generalCount").textContent=`${nums.length} coches`;if(!nums.length)grid.innerHTML='<div class="empty">No hay coches configurados.</div>';nums.forEach(n=>grid.appendChild(makeCar(n,true)))}
 function renderSummary(){const nums=allCars();const ins=nums.filter(n=>(data.states[n]||"in")==="in").length;document.getElementById("totalIn").textContent=ins;document.getElementById("totalOut").textContent=nums.length-ins;document.getElementById("totalMarked").textContent=nums.filter(n=>data.marked[n]).length}
 function renderView(){document.getElementById("groupView").hidden=data.view!=="groups";document.getElementById("generalView").hidden=data.view!=="general";document.querySelectorAll(".view-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===data.view))}
