@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Fleet IN/OUT" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>Fleet IN/OUT V5</title>
+  <title>Fleet IN/OUT V5.1</title>
   <style>
     :root{
       --bg:#eef2f7;--panel:#fff;--text:#111827;--muted:#64748b;--border:#cbd5e1;
@@ -55,7 +55,7 @@
 </head>
 <body>
 <header>
-  <div class="title-row"><h1>Fleet IN/OUT</h1><span class="version">V5 PDF</span></div>
+  <div class="title-row"><h1>Fleet IN/OUT</h1><span class="version">V5.1 PDF</span></div>
   <div class="global-summary">
     <div class="stat in"><small>TOTAL IN</small><span id="totalIn">0</span></div>
     <div class="stat out"><small>TOTAL OUT</small><span id="totalOut">0</span></div>
@@ -81,6 +81,16 @@
 </main>
 <dialog id="editDialog"><form method="dialog" class="modal" id="editForm"><h2>Editar grupos</h2><p>Escribe o pega los números separados por comas, espacios o líneas. La cantidad puede variar cada día.</p><label for="g12">Grupo 1/2</label><textarea id="g12"></textarea><label for="g34">Grupo 3/4</label><textarea id="g34"></textarea><label for="g56">Grupo 5/6</label><textarea id="g56"></textarea><div class="modal-actions"><button class="btn light" value="cancel">Cancelar</button><button class="btn blue" id="saveGroupsBtn" value="default">Guardar</button></div></form></dialog>
 <div id="toast"><span id="toastText"></span><button id="undoBtn">Deshacer</button></div>
+<dialog id="importDialog"><form method="dialog" class="modal">
+<h2>Importar lista diaria</h2>
+<p>Selecciona el PDF de Volvo. La app cargará solo los coches de los grupos 1/2, 3/4 y 5/6 e ignorará SPARE y Vårgårda.</p>
+<label for="pdfFile">Archivo PDF</label>
+<input id="pdfFile" type="file" accept="application/pdf,.pdf" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:#fff">
+<p id="importStatus" style="font-weight:800;color:#334155"></p>
+<details><summary style="font-weight:850;cursor:pointer;margin-top:12px">Alternativa: pegar texto</summary>
+<textarea id="importText" style="width:100%;height:170px;margin-top:10px" placeholder="Pega aquí el texto copiado del PDF…"></textarea></details>
+<div class="modal-actions"><button class="btn light" value="cancel">Cancelar</button><button class="btn blue" id="doImportBtn" value="default">Importar texto</button></div>
+</form></dialog>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 const DEFAULT_GROUPS={"1/2":[1,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18],"3/4":[19,20,21,23,24,25,26,27,28,29,30,31,32,33,34,35,36,38,39],"5/6":[41,42,43,44,45,47,48,49,50,65,67,68,69,70,71,72]};
@@ -230,14 +240,5 @@ if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.ser
 save();render();
 </script>
 
-<dialog id="importDialog"><form method="dialog" class="modal">
-<h2>Importar lista diaria</h2>
-<p>Selecciona el PDF de Volvo. La app cargará solo los coches de los grupos 1/2, 3/4 y 5/6 e ignorará SPARE y Vårgårda.</p>
-<label for="pdfFile">Archivo PDF</label>
-<input id="pdfFile" type="file" accept="application/pdf,.pdf" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:#fff">
-<p id="importStatus" style="font-weight:800;color:#334155"></p>
-<details><summary style="font-weight:850;cursor:pointer;margin-top:12px">Alternativa: pegar texto</summary>
-<textarea id="importText" style="width:100%;height:170px;margin-top:10px" placeholder="Pega aquí el texto copiado del PDF…"></textarea></details>
-<div class="modal-actions"><button class="btn light" value="cancel">Cancelar</button><button class="btn blue" id="doImportBtn" value="default">Importar texto</button></div>
-</form></dialog>
+
 </body></html>
