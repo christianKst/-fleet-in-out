@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Fleet IN/OUT" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>Fleet IN/OUT V4</title>
+  <title>Fleet IN/OUT V5</title>
   <style>
     :root{
       --bg:#eef2f7;--panel:#fff;--text:#111827;--muted:#64748b;--border:#cbd5e1;
@@ -120,7 +120,46 @@ document.getElementById("clearMarksBtn").onclick=()=>{const previous={...data.ma
 document.getElementById("resetBtn").onclick=()=>{if(confirm("¿Marcar todos los coches como IN y borrar todas las marcas naranjas?")){allCars().forEach(n=>data.states[n]="in");data.marked={};save();render();haptic(50);showToast("Jornada reiniciada",null)}};
 function searchCar(){const n=Number(document.getElementById("searchInput").value.trim());if(!Number.isInteger(n)||n<=0){showToast("Introduce un número válido",null);return}const group=carGroup(n);if(!group){showToast(`El coche ${n} no está en ningún grupo`,null);return}if(data.view==="groups")data.activeGroup=group;save();render();requestAnimationFrame(()=>{const target=document.querySelector(`[data-car="${n}"]`);if(target){target.scrollIntoView({behavior:"smooth",block:"center"});target.classList.add("flash");setTimeout(()=>target.classList.remove("flash"),3100)}})}
 document.getElementById("searchBtn").onclick=searchCar;document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();searchCar()}});
+
+document.getElementById("importBtn").onclick=()=>document.getElementById("importDialog").showModal();
+document.getElementById("doImportBtn").onclick=e=>{
+e.preventDefault();
+const txt=document.getElementById("importText").value;
+const keys=["1/2","3/4","5/6"];
+const map={"1/2":[],"3/4":[],"5/6":[]};
+let current=null;
+txt.split(/\n/).forEach(line=>{
+ if(line.includes("1/2")) current="1/2";
+ else if(line.includes("3/4")) current="3/4";
+ else if(line.includes("5/6")) current="5/6";
+ else if(current){
+   const nums=(line.match(/\d+/g)||[]).map(Number);
+   map[current].push(...nums);
+ }
+});
+if(!map["1/2"].length&&!map["3/4"].length&&!map["5/6"].length){alert("No se encontraron grupos.");return;}
+if(confirm("¿Reemplazar la planificación actual?")){
+ data.groups["1/2"]=[...new Set(map["1/2"])].sort((a,b)=>a-b);
+ data.groups["3/4"]=[...new Set(map["3/4"])].sort((a,b)=>a-b);
+ data.groups["5/6"]=[...new Set(map["5/6"])].sort((a,b)=>a-b);
+ ensureStates();
+ allCars().forEach(n=>data.states[n]="in");
+ data.marked={};
+ save();render();
+ document.getElementById("importDialog").close();
+ showToast("Lista importada",null);
+}
+};
+
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));
 save();render();
 </script>
+
+<dialog id="importDialog"><form method="dialog">
+<h3>Importar lista diaria</h3>
+<p>Pega aquí el texto del PDF.</p>
+<textarea id="importText" style="width:100%;height:200px"></textarea><br>
+<button value="cancel">Cancelar</button>
+<button id="doImportBtn">Importar</button>
+</form></dialog>
 </body></html>
