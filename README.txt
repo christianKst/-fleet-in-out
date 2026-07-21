@@ -1,10 +1,5 @@
-FLEET IN/OUT — VERSIÓN 4
+Fleet IN/OUT V5 PDF
 
-NOVEDAD DE ESTA VERSIÓN
-- Añadido el total de coches del grupo en la esquina superior derecha.
-- Se muestra junto a los contadores IN, OUT y marcados.
-- Formato: TOTAL · IN · OUT · MARCADOS.
+Permite importar directamente el PDF diario de Volvo desde el iPhone. Detecta Group 1 & 2, Group 3 & 4 y Group 5 & 6. Ignora SPARE y Vårgårda.
 
-Esta versión conserva los datos guardados por la V3 en el iPhone.
-
-Para actualizar GitHub, sustituye los archivos anteriores por los incluidos en esta carpeta.
+Para publicar en GitHub Pages, sustituye todos los archivos del repositorio por los de este ZIP. La primera apertura necesita conexión para cargar el lector PDF.

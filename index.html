@@ -55,7 +55,7 @@
 </head>
 <body>
 <header>
-  <div class="title-row"><h1>Fleet IN/OUT</h1><span class="version">V4</span></div>
+  <div class="title-row"><h1>Fleet IN/OUT</h1><span class="version">V5 PDF</span></div>
   <div class="global-summary">
     <div class="stat in"><small>TOTAL IN</small><span id="totalIn">0</span></div>
     <div class="stat out"><small>TOTAL OUT</small><span id="totalOut">0</span></div>
@@ -77,10 +77,11 @@
   <div id="generalView" hidden>
     <section class="panel"><div class="group-head"><h2>Vista general</h2><div class="group-count" id="generalCount"></div></div><div class="general-grid" id="generalGrid"></div><div class="legend">Los marcados aparecen en naranja. La etiqueta pequeña conserva su estado IN/OUT.</div></section>
   </div>
-  <div class="bottom-actions"><button class="btn blue" id="editBtn">Editar grupos</button><button class="btn orange" id="clearMarksBtn">Borrar marcas</button><button class="btn dark wide" id="resetBtn">Reiniciar jornada</button></div>
+  <div class="bottom-actions"><button class="btn blue" id="importBtn">Importar PDF</button><button class="btn blue" id="editBtn">Editar grupos</button><button class="btn orange" id="clearMarksBtn">Borrar marcas</button><button class="btn dark wide" id="resetBtn">Reiniciar jornada</button></div>
 </main>
 <dialog id="editDialog"><form method="dialog" class="modal" id="editForm"><h2>Editar grupos</h2><p>Escribe o pega los números separados por comas, espacios o líneas. La cantidad puede variar cada día.</p><label for="g12">Grupo 1/2</label><textarea id="g12"></textarea><label for="g34">Grupo 3/4</label><textarea id="g34"></textarea><label for="g56">Grupo 5/6</label><textarea id="g56"></textarea><div class="modal-actions"><button class="btn light" value="cancel">Cancelar</button><button class="btn blue" id="saveGroupsBtn" value="default">Guardar</button></div></form></dialog>
 <div id="toast"><span id="toastText"></span><button id="undoBtn">Deshacer</button></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 const DEFAULT_GROUPS={"1/2":[1,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18],"3/4":[19,20,21,23,24,25,26,27,28,29,30,31,32,33,34,35,36,38,39],"5/6":[41,42,43,44,45,47,48,49,50,65,67,68,69,70,71,72]};
 const STORAGE_KEY="fleetDataV3";
@@ -121,45 +122,122 @@ document.getElementById("resetBtn").onclick=()=>{if(confirm("¿Marcar todos los 
 function searchCar(){const n=Number(document.getElementById("searchInput").value.trim());if(!Number.isInteger(n)||n<=0){showToast("Introduce un número válido",null);return}const group=carGroup(n);if(!group){showToast(`El coche ${n} no está en ningún grupo`,null);return}if(data.view==="groups")data.activeGroup=group;save();render();requestAnimationFrame(()=>{const target=document.querySelector(`[data-car="${n}"]`);if(target){target.scrollIntoView({behavior:"smooth",block:"center"});target.classList.add("flash");setTimeout(()=>target.classList.remove("flash"),3100)}})}
 document.getElementById("searchBtn").onclick=searchCar;document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();searchCar()}});
 
-document.getElementById("importBtn").onclick=()=>document.getElementById("importDialog").showModal();
-document.getElementById("doImportBtn").onclick=e=>{
-e.preventDefault();
-const txt=document.getElementById("importText").value;
-const keys=["1/2","3/4","5/6"];
-const map={"1/2":[],"3/4":[],"5/6":[]};
-let current=null;
-txt.split(/\n/).forEach(line=>{
- if(line.includes("1/2")) current="1/2";
- else if(line.includes("3/4")) current="3/4";
- else if(line.includes("5/6")) current="5/6";
- else if(current){
-   const nums=(line.match(/\d+/g)||[]).map(Number);
-   map[current].push(...nums);
- }
-});
-if(!map["1/2"].length&&!map["3/4"].length&&!map["5/6"].length){alert("No se encontraron grupos.");return;}
-if(confirm("¿Reemplazar la planificación actual?")){
- data.groups["1/2"]=[...new Set(map["1/2"])].sort((a,b)=>a-b);
- data.groups["3/4"]=[...new Set(map["3/4"])].sort((a,b)=>a-b);
- data.groups["5/6"]=[...new Set(map["5/6"])].sort((a,b)=>a-b);
- ensureStates();
- allCars().forEach(n=>data.states[n]="in");
- data.marked={};
- save();render();
- document.getElementById("importDialog").close();
- showToast("Lista importada",null);
+document.getElementById("importBtn").onclick=()=>{
+  document.getElementById("pdfFile").value="";
+  document.getElementById("importText").value="";
+  document.getElementById("importStatus").textContent="";
+  document.getElementById("importDialog").showModal();
+};
+
+function applyImportedGroups(map, sourceLabel="PDF"){
+  const clean={"1/2":[],"3/4":[],"5/6":[]};
+  Object.keys(clean).forEach(g=>clean[g]=[...new Set((map[g]||[]).map(Number).filter(n=>Number.isInteger(n)&&n>0))].sort((a,b)=>a-b));
+  const total=clean["1/2"].length+clean["3/4"].length+clean["5/6"].length;
+  if(!total){alert("No se encontraron coches de los grupos 1/2, 3/4 o 5/6.");return false;}
+  const summary=`Grupo 1/2: ${clean["1/2"].length}\nGrupo 3/4: ${clean["3/4"].length}\nGrupo 5/6: ${clean["5/6"].length}\nTotal: ${total}`;
+  if(!confirm(`Lista detectada desde ${sourceLabel}:\n\n${summary}\n\n¿Reemplazar la planificación actual?`))return false;
+  data.groups=clean;
+  data.states={};data.marked={};
+  allCars().forEach(n=>data.states[n]="in");
+  data.activeGroup="1/2";data.view="groups";
+  save();render();haptic(45);
+  document.getElementById("importDialog").close();
+  showToast(`PDF importado: ${total} coches`,null);
+  return true;
 }
+
+function parseScheduleLines(lines){
+  const map={"1/2":[],"3/4":[],"5/6":[]};
+  for(const raw of lines){
+    const line=String(raw||"").replace(/\s+/g," ").trim();
+    if(!line)continue;
+    let group=null;
+    if(/Group\s*1\s*&\s*2/i.test(line))group="1/2";
+    else if(/Group\s*3\s*&\s*4/i.test(line))group="3/4";
+    else if(/Group\s*5\s*&\s*6/i.test(line))group="5/6";
+    if(!group)continue;
+    const m=line.match(/^\s*(\d{1,3})\b/);
+    if(m)map[group].push(Number(m[1]));
+  }
+  return map;
+}
+
+function groupPdfItemsIntoLines(items){
+  const rows=[];
+  for(const item of items){
+    const text=(item.str||"").trim();if(!text)continue;
+    const x=item.transform?.[4]||0,y=item.transform?.[5]||0;
+    let row=rows.find(r=>Math.abs(r.y-y)<2.5);
+    if(!row){row={y,parts:[]};rows.push(row)}
+    row.parts.push({x,text});
+  }
+  rows.sort((a,b)=>b.y-a.y);
+  return rows.map(r=>r.parts.sort((a,b)=>a.x-b.x).map(p=>p.text).join(" "));
+}
+
+async function importPdfFile(file){
+  const status=document.getElementById("importStatus");
+  if(!file){alert("Selecciona un PDF.");return;}
+  if(!window.pdfjsLib){alert("No se pudo cargar el lector PDF. Comprueba la conexión a internet y vuelve a abrir la app.");return;}
+  try{
+    status.textContent="Leyendo PDF…";
+    pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const bytes=new Uint8Array(await file.arrayBuffer());
+    const pdf=await pdfjsLib.getDocument({data:bytes}).promise;
+    const allLines=[];
+    for(let p=1;p<=pdf.numPages;p++){
+      status.textContent=`Leyendo página ${p} de ${pdf.numPages}…`;
+      const page=await pdf.getPage(p);
+      const content=await page.getTextContent();
+      allLines.push(...groupPdfItemsIntoLines(content.items));
+    }
+    const map=parseScheduleLines(allLines);
+    const found=Object.values(map).reduce((a,v)=>a+v.length,0);
+    if(!found){
+      status.textContent="No pude detectar los grupos automáticamente.";
+      alert("No se encontraron filas con Group 1 & 2, Group 3 & 4 o Group 5 & 6. Puedes usar la opción de pegar texto.");
+      return;
+    }
+    status.textContent=`Detectados ${found} coches.`;
+    applyImportedGroups(map,file.name);
+  }catch(err){
+    console.error(err);status.textContent="Error al leer el PDF.";
+    alert("No se pudo leer este PDF. Prueba a descargarlo de nuevo o usa la opción de pegar texto.");
+  }
+}
+
+document.getElementById("pdfFile").addEventListener("change",e=>importPdfFile(e.target.files[0]));
+document.getElementById("doImportBtn").onclick=e=>{
+  e.preventDefault();
+  const txt=document.getElementById("importText").value.trim();
+  if(!txt){alert("Selecciona un PDF o pega el texto del documento.");return;}
+  const lines=txt.split(/\n/);
+  let map=parseScheduleLines(lines);
+  let found=Object.values(map).reduce((a,v)=>a+v.length,0);
+  if(!found){
+    map={"1/2":[],"3/4":[],"5/6":[]};let current=null;
+    for(const line of lines){
+      if(/1\s*[\/&]\s*2/.test(line))current="1/2";
+      else if(/3\s*[\/&]\s*4/.test(line))current="3/4";
+      else if(/5\s*[\/&]\s*6/.test(line))current="5/6";
+      else if(current)map[current].push(...((line.match(/\b\d{1,3}\b/g)||[]).map(Number)));
+    }
+  }
+  applyImportedGroups(map,"texto pegado");
 };
 
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));
 save();render();
 </script>
 
-<dialog id="importDialog"><form method="dialog">
-<h3>Importar lista diaria</h3>
-<p>Pega aquí el texto del PDF.</p>
-<textarea id="importText" style="width:100%;height:200px"></textarea><br>
-<button value="cancel">Cancelar</button>
-<button id="doImportBtn">Importar</button>
+<dialog id="importDialog"><form method="dialog" class="modal">
+<h2>Importar lista diaria</h2>
+<p>Selecciona el PDF de Volvo. La app cargará solo los coches de los grupos 1/2, 3/4 y 5/6 e ignorará SPARE y Vårgårda.</p>
+<label for="pdfFile">Archivo PDF</label>
+<input id="pdfFile" type="file" accept="application/pdf,.pdf" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:#fff">
+<p id="importStatus" style="font-weight:800;color:#334155"></p>
+<details><summary style="font-weight:850;cursor:pointer;margin-top:12px">Alternativa: pegar texto</summary>
+<textarea id="importText" style="width:100%;height:170px;margin-top:10px" placeholder="Pega aquí el texto copiado del PDF…"></textarea></details>
+<div class="modal-actions"><button class="btn light" value="cancel">Cancelar</button><button class="btn blue" id="doImportBtn" value="default">Importar texto</button></div>
 </form></dialog>
 </body></html>
